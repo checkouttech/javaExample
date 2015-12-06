@@ -1,0 +1,13 @@
+
+
+Running testng from command line 
+
+    java -cp "/opt/testng-6.8.jar:/opt/jcommander-1.48.jar:." org.testng.TestNG testng.xml  
+ 
+NOTE : Remember the . in the classpath 
+
+
+
+
+
+

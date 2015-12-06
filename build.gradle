@@ -1,0 +1,123 @@
+apply plugin: 'java'
+apply plugin: "jacoco"
+apply plugin: 'war'
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+   testCompile 'org.testng:testng:6.8'
+   compile 'log4j:log4j:1.2.17'
+   
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'project/src/main/java/'
+        }
+        resources {
+            srcDir 'project/src/main/resources'
+        }
+    }
+
+   test {
+        java {
+            srcDir 'project/src/test/java/'
+        }        
+    }
+}
+
+
+test {
+    useTestNG()
+   
+    // explicitly include or exclude tests
+    include 'src/test/java/**'
+
+    jacoco {
+        append = false
+        destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
+        classDumpFile = file("$buildDir/jacoco/classpathdumps")
+    }
+}
+
+
+
+jacoco {
+        //applyTo run
+    //toolVersion = "0.7.1.201405082137"
+    reportsDir = file("$buildDir/customJacocoReportDir")
+}
+
+
+test {
+    jacoco {
+        append = false
+        destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
+        classDumpFile = file("$buildDir/jacoco/classpathdumps")
+    }
+    finalizedBy jacocoTestReport 
+}
+
+
+jacocoTestReport {
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.destination "${buildDir}/jacocoHtml"
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sourceCompatibility = 1.5
+jar {
+    baseName = 'smith'
+    version = '1.0'
+    manifest {
+        attributes 'Implementation-Title': 'Gradle Quickstart',
+                   'Implementation-Version': version
+
+        // to add main class for building jar 
+        // attributes 'Main-Class': 'net.petrikainulainen.gradle.HelloWorld'
+    }
+}
+
+
+uploadArchives {
+    repositories {
+       flatDir {
+           dirs 'repos'
+       }
+    }
+}
+
+
+
+
+
+
+
+
+
+// show standard out and standard error of the test JVM(s) on the console
+//testLogging.showStandardStreams = true
+
+
+
+
+
