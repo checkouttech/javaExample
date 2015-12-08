@@ -32,8 +32,12 @@ sourceSets {
 
 
 test {
-    useTestNG()
+    //useTestNG()
    
+    useTestNG{
+            useDefaultListeners = true
+     }
+
     // explicitly include or exclude tests
     include 'src/test/java/**'
 
