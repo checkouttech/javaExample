@@ -1,6 +1,39 @@
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+
+
+    plugins {
+      id "nebula.ospackage" version "3.2.0"
+      id "org.sonarqube" version "1.1"
+    } 
+
+
+apply plugin: 'nebula.ospackage'
 apply plugin: 'java'
 apply plugin: "jacoco"
-apply plugin: 'war'
+//apply plugin: 'war'
+apply plugin: 'nebula.ospackage-base'
+apply plugin: "org.sonarqube"
+apply plugin: 'checkstyle'
+apply plugin: 'findbugs'
+apply plugin: 'jdepend'
+apply plugin: 'pmd'
+apply plugin: 'distribution'
+apply plugin: 'application'
+apply plugin: 'build-dashboard'
+
+
+apply from: "$rootDir/gradle/versioning.gradle"
+apply plugin: 'project-report'
+
+mainClassName = "org.gradle.sample.Main"
+
+
+Logger slf4jLogger = LoggerFactory.getLogger('some-logger')
+slf4jLogger.info('An info log message logged using SLF4j')
+
+
 
 repositories {
     mavenCentral()
@@ -10,54 +43,33 @@ repositories {
 dependencies {
    testCompile 'org.testng:testng:6.8'
    compile 'log4j:log4j:1.2.17'
-   
 }
+
 
 sourceSets {
     main {
-        java {
-            srcDir 'project/src/main/java/'
-        }
-        resources {
-            srcDir 'project/src/main/resources'
-        }
+        java {       srcDir 'src/main/java/'      }
+        resources {  srcDir 'src/main/resources'  }
     }
 
    test {
-        java {
-            srcDir 'project/src/test/java/'
-        }        
+        java {       srcDir 'src/test/java/'      }        
+        resources {  srcDir 'src/test/resources'  }
     }
 }
 
-
 test {
-    //useTestNG()
-   
-    useTestNG{
-            useDefaultListeners = true
-     }
+
+    systemProperties 'property': 'value'
 
     // explicitly include or exclude tests
     include 'src/test/java/**'
 
-    jacoco {
-        append = false
-        destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
-        classDumpFile = file("$buildDir/jacoco/classpathdumps")
+    // To generate testng results in xml format for jenkins plugin
+    useTestNG{
+        useDefaultListeners = true
     }
-}
 
-
-
-jacoco {
-        //applyTo run
-    //toolVersion = "0.7.1.201405082137"
-    reportsDir = file("$buildDir/customJacocoReportDir")
-}
-
-
-test {
     jacoco {
         append = false
         destinationFile = file("$buildDir/jacoco/jacocoTest.exec")
@@ -66,41 +78,51 @@ test {
     finalizedBy jacocoTestReport 
 }
 
+// Run jacoco ( the above jacoco setup can be moved here ) 
+jacoco {
 
-jacocoTestReport {
-    reports {
-        xml.enabled false
-        csv.enabled false
-        html.destination "${buildDir}/jacocoHtml"
-    }
 }
 
 
+// jacoco ( try moving under jacoco ) 
+jacocoTestReport {
+       dependsOn test
+
+       group = "Reporting"
+       description = "Generate Jacoco coverage reports after running tests."
+
+       sourceDirectories = files(sourceSets.main.allSource.srcDirs)
+       classDirectories = files(sourceSets.main.output.classesDir)
+
+       //additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
+       //additionalClassDirs = files("build/jacoco/classpathdumps/src/main/java/")
+
+       //executionData = files("build/jacoco/testDebug.exec")
+       
+       println "sourceSets.main.allJava.srcDirs is set to : " + sourceSets.main.allJava.srcDirs
+       println "sourceSets.main.output.classesDir is set to : " + sourceSets.main.output.classesDir
+
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html.enabled true
+        html.destination "${buildDir}/jacocoHtml"
+        sourceSets sourceSets.main
+   }
+}
 
 
-
-
-
-
-
-
-
-
-
-
-sourceCompatibility = 1.5
 jar {
     baseName = 'smith'
     version = '1.0'
     manifest {
-        attributes 'Implementation-Title': 'Gradle Quickstart',
-                   'Implementation-Version': version
-
-        // to add main class for building jar 
-        // attributes 'Main-Class': 'net.petrikainulainen.gradle.HelloWorld'
-    }
+             attributes 'Implementation-Title': 'Gradle Quickstart',
+                        'Implementation-Version': version,
+                        // to add main class for building jar 
+                        'Main-Class': 'src.main.java.HelloWorld '
+              }
+       finalizedBy buildRpm
 }
-
 
 uploadArchives {
     repositories {
@@ -112,9 +134,56 @@ uploadArchives {
 
 
 
+ospackage {
+    packageName = 'foo'
+    version = '1.2.3'
+    release = '1'
+    arch = I386
+    os = LINUX
 
+    installUtils file('scripts/rpm/utils.sh')
+    preInstall file('scripts/rpm/preInstall.sh')
+    postInstall file('scripts/rpm/postInstall.sh')
+    preUninstall 'touch /tmp/myfile'
+    postUninstall file('scripts/rpm/postUninstall.sh')
 
+    //requires('qux')
 
+    into '/opt/foo'
+
+    from(jar.outputs.files) {
+        into 'lib'
+    }
+    from(configurations.runtime) {
+        into 'lib'
+    }
+    from('lib') {
+        into 'lib'
+    }
+    from('scripts') {
+        into 'bin'
+        exclude 'database'
+        fileMode = 0550
+    }
+    from('src/main/resources') {
+        fileType CONFIG | NOREPLACE
+        into 'conf'
+    }
+    from('home') {
+        // Creating directory entries (or not) in the RPM is normally left up to redline-rpm library.
+        // Use this to explicitly create an entry -- for setting directory fileMode on system directories.
+        createDirectoryEntry = true
+        fileMode = 0500
+        into 'home'
+    }
+    from('endorsed') {
+        // Will tell redline-rpm not to auto create directories, which
+        // is sometimes necessary to avoid rpm directory conflicts
+        addParentDirs = false
+        into '/usr/share/tomcat/endorsed'
+    }
+
+}
 
 
 
@@ -122,6 +191,48 @@ uploadArchives {
 //testLogging.showStandardStreams = true
 
 
+// buildRpm and buildDeb are implicitly created, but can still be configured if needed
+
+buildRpm {
+   println 'task buildRPM : Building RPM'
+   logger.lifecycle('A lifecycle info log message.')
+}
 
 
 
+//task app1Rpm(type: Rpm) {
+//    packageName = 'foo'
+//}
+
+
+
+sonarqube {
+    properties {
+        property "sonar.host.url", "http://192.168.150.21:9000"
+        property "sonar.projectKey", "Java_Example_Build"
+        property "sonar.projectName", "Java :: Simple Project :: Java Example Build"
+        property "sonar.sources", "src/main/java/"
+        property "sonar.tests",  "src/test/java/"
+        property "sonar.language",  "java"
+        property "sonar.java.binaries",  "build/classes"
+        property "sonar.junit.reportsPath",  "build/reports/tests/junitreports/"
+        property "sonar.java.coveragePlugin", "jacoco"
+        property "sonar.java.sourceEncoding", "UTF-8"
+        property "sonar.java.projectVersion", "1.0"
+        property "sonar.jacoco.reportPath", "build/jacoco/jacocoTest.exec"
+    }
+}
+
+
+// Generates an HTML dependency report.
+htmlDependencyReport {
+//    projects = project.allprojects
+}
+
+
+projectReport {
+}
+
+// generate a single HTML dashboard that provides a single point of access to all of the reports generated by a build.
+buildDashboard {
+}

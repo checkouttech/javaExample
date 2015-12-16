@@ -4,15 +4,15 @@ package src.main.java;
 
 public class MathClass {
 
-	/**
-	 * @param args
-	 */
-	
-	public int addNumbers ( int a , int b )
-	{
-		return ( a+ b) ;
-	}
-
+    /**
+     * @param args
+     */
+    
+    public int addNumbers ( int a , int b )
+    {
+        return  a + b ;
+    }
+    
 }
 
 
