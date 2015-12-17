@@ -11,3 +11,8 @@ NOTE : Remember the . in the classpath
 
 
 
+rpm -qpl package.rpm
+
+
+
+
