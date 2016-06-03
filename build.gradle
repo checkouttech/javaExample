@@ -1,12 +1,10 @@
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-
-
-    plugins {
-      id "nebula.ospackage" version "3.2.0"
-      id "org.sonarqube" version "1.1"
-    } 
+plugins {
+   id "nebula.ospackage" version "3.2.0"
+   id "org.sonarqube" version "1.1"
+} 
 
 
 apply plugin: 'nebula.ospackage'
@@ -32,7 +30,6 @@ mainClassName = "org.gradle.sample.Main"
 
 Logger slf4jLogger = LoggerFactory.getLogger('some-logger')
 slf4jLogger.info('An info log message logged using SLF4j')
-
 
 
 repositories {
